@@ -260,7 +260,7 @@ while read -r line ; do
 			;;
 		button/volume*)
 			VOL=$( amixer sget Master | awk -F ' ' 'NR == 5 {print substr($4, 2, 3)}' )
-			echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20}  $VOL" > "$PANEL_FIFO"
+			echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20} $VOL" > "$PANEL_FIFO"
 	esac
 done
 }
