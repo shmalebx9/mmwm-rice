@@ -2,18 +2,16 @@
 
 wm="mmwm"
 ff="/tmp/mmwm.fifo"
-[[ -p $ff ]] || mkfifo -m 600 "$ff"
+PANEL_FIFO="/tmp/panel-fifo"
+[[ -p $ff ]] || mkfifo -m 600 "$ff" "$PANEL_FIFO"
 
-#FIFO
-PANEL_FIFO="${PANEL_FIFO:=/tmp/panel-fifo}"
-[ -e "$PANEL_FIFO" ] && rm "$PANEL_FIFO"
-mkfifo "$PANEL_FIFO"
 
 # desktop names
 # byzantine ds=("α" "β" "γ" "δ" "ε" "Ϛ" "ζ")
 # Georgian ds=("ა" "ბ" "გ" "დ" "ე" "ვ" "ზ")
 ds=("1" "2" "3" "4" "5" "6" "7")
 
+#colours
 focus="#00ffff"
 focus_bg="#f24444"
 
@@ -25,39 +23,11 @@ urgent="#ff3333"
 occupied="#00ffff"
 occupied_bg="#484848"
 
-workspace() {
-while read -t 60 -r wmout || true; do
-    if [[ $wmout =~ ^(([[:digit:]]+:)+[[:digit:]]+ ?)+$ ]]; then
-        read -ra desktops <<< "$wmout" && unset r
-        for desktop in "${desktops[@]}"; do
-            IFS=':' read -r d w m c u <<< "$desktop"
-            fg="%{F$unfocus B$unfocus_bg}"
-            ((w)) && fg="%{F$occupied B$occupied_bg}"
-            ((c)) && fg="%{F$focus B$focus_bg}" 
-      #      || fg="%{F$unfocus B$unfocus_bg}"
-            ((u)) && w+="%{F$urgent}"
-             #r+="[${w/tt/-}] $fg${ds[$d]} "
-             r+="$fg ${ds[$d]} "
-        done
-        #r="${r%::*}"
-    fi
-    echo "W $r"
-done < "$ff"
-}
-
-workspace > "$PANEL_FIFO" &
-
-# pass output to fifo
-
-
-
-#colors
 FG_PANEL="#f4f4f4" 						# Panel's text colour
 BG_PANEL="#00607654"						# Panel's background colour
 
-ICON="%{B#939aa4}%{F#f4f4f5}"
+ICON="%{B#484848}%{F#f4f4f5}"
 
-colourwm="#1e1e1e"
 colourdate="#be6dff"
 colourtime="#ffd700"
 colourbat="#ff6dbe"
@@ -109,20 +79,38 @@ readonly PANEL_X=0		#panel offset to the right
 readonly PANEL_Y=5			#panel offset down
 GEOMETRY="$PANEL_WIDTH"x"$PANEL_HEIGHT"+"$PANEL_X"+"$PANEL_Y"
 
+Workspaces() {
+while read -t 60 -r wmout || true; do
+    if [[ $wmout =~ ^(([[:digit:]]+:)+[[:digit:]]+ ?)+$ ]]; then
+        read -ra desktops <<< "$wmout" && unset r
+        for desktop in "${desktops[@]}"; do
+            IFS=':' read -r d w m c u <<< "$desktop"
+            fg="%{F$unfocus B$unfocus_bg}"
+            ((w)) && fg="%{F$occupied B$occupied_bg}"
+            ((c)) && fg="%{F$focus B$focus_bg}" 
+      #      || fg="%{F$unfocus B$unfocus_bg}"
+            ((u)) && w+="%{F$urgent}"
+             #r+="[${w/tt/-}] $fg${ds[$d]} "
+             r+="$fg ${ds[$d]} "
+        done
+        #r="${r%::*}"
+    fi
+    echo "W $r"
+done < "$ff"
+}
+
+Workspaces > "$PANEL_FIFO" &
 
 # Clock and date
 #clock -sf 'S | %a %b %e | %I:%M | ' > "$PANEL_FIFO" &
 Date(){
 while true; do
-	echo $(date "+S $ICON $DATE %{B$colourdate}%{F#1d1e20} %a %b %d %{B#00607654}%{F#00607654}''$ICON $TIME %{B$colourtime}%{F#1d1e20}%l:%M ")
+	echo $(date "+S $ICON $DATE %{B$colourdate}%{F#1d1e20} %a %b %d %{B#00607654}%{F#00607654}''$ICON $TIME %{B$colourtime}%{F#1d1e20} %l:%M ")
 	sleep 30
 done
 }
 
 Date > "$PANEL_FIFO" &
-
-# Bspwm info for workspaces
-bspc subscribe report > "$PANEL_FIFO" &
 
 #CPU
 Cpu(){
@@ -158,7 +146,7 @@ while true ; do
 	ESSID=$(iwconfig wlp3s0 | awk -F' ' 'NR == 1 {gsub("ESSID:\"","");gsub("\"",""); print substr($4,1,4)}')
 	if [ "$ESSID" = "ESSI" ]
 		then
-			echo "$ICON $WIFIOFF"
+			echo "A $ICON $WIFIOFF"
 			if [ "$WNOT" = "FALSE" ] ; then
 				notify-send "Warning: Wifi Disconnected" && WNOT="TRUE"
 			fi
@@ -178,7 +166,7 @@ while true ; do
 	if [ "$CHARGING" != "Discharging" ] ; then
 		echo "D $ICON $BATCHARGE %{B$colourbat}%{F#1d1e20} $BATPERC%"
 	elif [ "$BATPERC" -lt 10 ] ; then
-		echo "C $ICON $BATLOW %{B$colourbat}%{F#1d1e20} $BATPERC% " && 
+		echo "D $ICON $BATLOW %{B$colourbat}%{F#1d1e20} $BATPERC% " && 
 		if [ "$BNOT" = "FALSE" ] ; then
 			notify-send "Warning: Battery low" && BNOT="TRUE"
 		fi
@@ -211,20 +199,12 @@ while read -r line ; do
 		D*)
 			# Battery
 			bat="${line#?} %{B-}%{F-}"
-			;;			
-		C*)
-			# Battery
-			bat="${line#?} %{B-}%{F-}"
-			;;	
+			;;				
 		V*)
 			# Volume
 			vol="${line#?} %{B-}%{F-}"
 			;;					
 		A*)
-			# Wifi
-			wifi="${line#?} %{B-}%{F-}"
-			;;	
-		B*)
 			# Wifi
 			wifi="${line#?} %{B-}%{F-}"
 			;;	
@@ -262,25 +242,25 @@ while read -r line ; do
 			case $line in
 			*00000000) echo "bat disconnected"
 			BATPERC=$(cat /sys/class/power_supply/BAT1/capacity)
-			echo "D $BATNORMAL $BATPERC%" > "$PANEL_FIFO"
+			echo "D $ICON $BATNORMAL %{B$colourbat}%{F#1d1e20} $BATPERC%" > "$PANEL_FIFO"
 			;;
 			*00000001) echo "bat connected"
 			BATPERC=$(cat /sys/class/power_supply/BAT1/capacity)
-			echo "D $BATCHARGE $BATPERC% "  > "$PANEL_FIFO"
+			echo "D $ICON $BATCHARGE %{B$colourbat}%{F#1d1e20} $BATPERC% "  > "$PANEL_FIFO"
 			;;
 			esac
 			;;
 		button/mute*)
 			VOL=$( amixer sget Master | awk -F ' ' 'NR == 5 {print substr($4, 2, 3)}' )
 			if [[ $(amixer sget Master | grep "\[on\]") ]]; then
-				echo "V $VOLMUTE" > "$PANEL_FIFO"
+				echo "V $ICON $VOLMUTE" > "$PANEL_FIFO"
 			else
-				echo "V $VOLON $VOL" > "$PANEL_FIFO"
+				echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20} $VOL" > "$PANEL_FIFO"
 			fi
 			;;
 		button/volume*)
 			VOL=$( amixer sget Master | awk -F ' ' 'NR == 5 {print substr($4, 2, 3)}' )
-			echo "V $VOLON $VOL" > "$PANEL_FIFO"
+			echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20}  $VOL" > "$PANEL_FIFO"
 	esac
 done
 }
