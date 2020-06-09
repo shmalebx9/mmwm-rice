@@ -1,3 +1,5 @@
+/* working copy in pktemplates */
+
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -30,13 +32,6 @@
 #define AUTOCENTER      True      /* automatically center windows floating by default */
 #define OUTPUT_TITLE    False     /* output the title of the currently active window */
 
-#define XF86MonBrightnessDown           0x1008ff03
-#define XF86MonBrightnessUp              0x1008ff02
-
-#define XF86AudioLowerVolume            0x1008ff11   
-#define XF86AudioRaiseVolume            0x1008ff13 
-#define XF86AudioMute            		0x1008ff12
-
 /* Shell command helper - DO NOT EDIT */
 #define SHCMD(cmd) {.com = (const char*[]){"/bin/sh", "-c", cmd, NULL}}
 
@@ -48,11 +43,14 @@ static const char *menucmd[] = { "drun", NULL };
 static const char *browsercmd[] = { "qutebrowser",     NULL };
 static const char *filescmd[] = { "alacritty","-e","lf","~/Documents/",     NULL };
 static const char *alttermcmd[] = { "alacritty",     NULL };
+
+/* Define commands to run on volume/brightness keypress events */
 static const char *brightnessup[] = { "xbacklight", "-inc", "5",     NULL };
 static const char *brightnessdown[] = { "xbacklight", "-dec", "5",     NULL };
 
 static const char *voldown[] = { "amixer", "-q", "set", "Master", "5-",     NULL };
 static const char *volup[] = { "amixer", "-q", "set", "Master", "5+",     NULL };
+static const char *volmute[] = { "amixer", "-q", "set", "Master", "toggle",     NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD4,             K,              change_desktop, {.i = N}}, \
@@ -85,10 +83,13 @@ static key keys[] = {
      {  MOD4,       XK_v,     spawn,             {.com = browsercmd}},
      {  MOD4,       XK_s,     spawn,             {.com = alttermcmd}},
      {  MOD4,       XK_t,     spawn,             {.com = filescmd}},
-     {  0, XF86MonBrightnessUp,  spawn,             {.com = brightnessup}}, 
-     {  0, XF86MonBrightnessDown,  spawn,             {.com = brightnessdown}},      
-     {  0, XF86AudioLowerVolume,  spawn,             {.com = voldown}},     
-     {  0, XF86AudioRaiseVolume,  spawn,             {.com = volup}},     
+     
+     {  0, XF86XK_MonBrightnessUp,  spawn,             {.com = brightnessup}}, 
+     {  0, XF86XK_MonBrightnessDown,  spawn,             {.com = brightnessdown}},      
+     {  0, XF86XK_AudioLowerVolume,  spawn,             {.com = voldown}},     
+     {  0, XF86XK_AudioRaiseVolume,  spawn,             {.com = volup}}, 
+     {  0, XF86XK_AudioMute,  spawn,             {.com = volmute}}, 
+      
     /* quit current window */
     {  MOD4,             XK_c,          killclient,        {NULL}},
     /* desktop selection */

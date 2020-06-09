@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-
+# working copy in .local/bin/
 wm="mmwm"
 ff="/tmp/mmwm.fifo"
 PANEL_FIFO="/tmp/panel-fifo"
@@ -76,7 +76,7 @@ BAT_INT="50"
 readonly PANEL_WIDTH=1920
 readonly PANEL_HEIGHT=25
 readonly PANEL_X=0		#panel offset to the right
-readonly PANEL_Y=5			#panel offset down
+readonly PANEL_Y=3			#panel offset down
 GEOMETRY="$PANEL_WIDTH"x"$PANEL_HEIGHT"+"$PANEL_X"+"$PANEL_Y"
 
 Workspaces() {
@@ -253,10 +253,10 @@ while read -r line ; do
 		button/mute*)
 			VOL=$( amixer sget Master | awk -F ' ' 'NR == 5 {print substr($4, 2, 3)}' )
 			if [[ $(amixer sget Master | grep "\[on\]") ]]; then
-				echo "V $ICON $VOLMUTE" > "$PANEL_FIFO"
+				echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20} $VOL"
 			else
-				echo "V $ICON $VOLON %{B$colourvol}%{F#1d1e20} $VOL" > "$PANEL_FIFO"
-			fi
+				echo "V $ICON $VOLMUTE"
+			fi > "$PANEL_FIFO"
 			;;
 		button/volume*)
 			VOL=$( amixer sget Master | awk -F ' ' 'NR == 5 {print substr($4, 2, 3)}' )
